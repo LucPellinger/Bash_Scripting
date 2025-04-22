@@ -228,6 +228,8 @@ cat <<EOL > "$BASE_PATH/$PROJECT_NAME/admin/teardown.sh"
 
 set -e
 
+EXPECTED_ROOT="$BASE_PATH"
+
 echo "⚠️ WARNING: This will permanently delete the Conda environment '$ENV_NAME' and the project folder."
 echo ""
 
@@ -243,6 +245,15 @@ if [[ "\$FINAL_CONFIRM" != "delete" ]]; then
   exit 1
 fi
 
+# Resolve project path (admin/..)
+PROJECT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Safety check: ensure deletion only happens within the expected root path
+if [[ "\$PROJECT_DIR" != "\$EXPECTED_ROOT/"* ]]; then
+  echo "❌ Aborting: Project directory is outside the allowed path (\$EXPECTED_ROOT)."
+  exit 1
+fi
+
 # Remove Conda environment
 echo "🧼 Removing Conda environment '$ENV_NAME'..."
 conda remove --name "$ENV_NAME" --all -y || echo "⚠️ Conda environment not found."
@@ -253,15 +264,19 @@ if jupyter kernelspec list | grep -q "$ENV_NAME"; then
   jupyter kernelspec remove "$ENV_NAME" -f
 fi
 
-# Delete project folder
-PROJECT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
-cd ..
-rm -rf "\$PROJECT_DIR"
+# Final confirmation before deletion
+read -p "Are you sure you want to delete the project folder at \"\$PROJECT_DIR\"? Type 'yes' to confirm: " DELETE_CONFIRM
+if [[ "\$DELETE_CONFIRM" != "yes" ]]; then
+  echo "❌ Cancelled."
+  exit 1
+fi
 
+# Delete the project folder
+rm -rf "\$PROJECT_DIR"
 echo "✅ Environment and project folder deleted."
 EOL
 
 
-echo "✅ Project '$PROJECT_NAME' is fully set up!"
+echo "✅ Project \'\$PROJECT_NAME\' is fully set up!"
 echo "👉 Open it in VSCode with: code ."
 echo "🔁 To activate your environment later: conda activate $ENV_NAME"
