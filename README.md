@@ -48,8 +48,7 @@ chmod +x teardown.sh
 Follow the prompts to:
 
 - Name your conda environment name
-- Set up a Conda environment
-- Configure the project in VSCode
+- Follow the other instructions
 
 ---
 
